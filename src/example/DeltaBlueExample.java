@@ -66,7 +66,14 @@ public class DeltaBlueExample {
      * current constraints. Strengths cannot be created outside this class, so
      * == can be used for value comparison.
      */
-    static class Strength {
+    static enum Strength {
+        REQUIRED(0, "required"),
+        STRONG_PREFERRED(1, "strongPreferred"),
+        PREFERRED(2, "preferred"),
+        STRONG_DEFAULT(3, "strongDefault"),
+        NORMAL(4, "normal"),
+        WEAK_DEFAULT(5, "weakDefault"),
+        WEAKEST(6, "weakest");
 
         final int value;
         final String name;
@@ -75,12 +82,12 @@ public class DeltaBlueExample {
             this.value = value;
             this.name = name;
         }
+        
+        static final Strength[] STRENGTHS = new Strength[]{WEAKEST, WEAK_DEFAULT, NORMAL, STRONG_DEFAULT,
+                PREFERRED, STRONG_PREFERRED};
 
         Strength nextWeaker() {
-            // Note: extracting the array into a static field 
-            // does not improve performance
-            return new Strength[]{WEAKEST, WEAK_DEFAULT, NORMAL, STRONG_DEFAULT,
-                PREFERRED, STRONG_REFERRED}[value];
+            return STRENGTHS[value];
         }
 
         static boolean stronger(Strength s1, Strength s2) {
@@ -99,14 +106,6 @@ public class DeltaBlueExample {
             return stronger(s1, s2) ? s1 : s2;
         }
     }
-    //Compile time computed constants.
-    static final Strength REQUIRED = new Strength(0, "required");
-    static final Strength STRONG_REFERRED = new Strength(1, "strongPreferred");
-    static final Strength PREFERRED = new Strength(2, "preferred");
-    static final Strength STRONG_DEFAULT = new Strength(3, "strongDefault");
-    static final Strength NORMAL = new Strength(4, "normal");
-    static final Strength WEAK_DEFAULT = new Strength(5, "weakDefault");
-    static final Strength WEAKEST = new Strength(6, "weakest");
 
     static abstract class Constraint {
 
@@ -151,7 +150,7 @@ public class DeltaBlueExample {
         Constraint satisfy(int mark) {
             chooseMethod(mark);
             if (!isSatisfied()) {
-                if (strength == REQUIRED) {
+                if (strength == Strength.REQUIRED) {
                     System.out.println("Could not satisfy a required constraint!");
                 }
                 return null;
@@ -496,7 +495,7 @@ public class DeltaBlueExample {
         List<Constraint> constraints = new ArrayList<Constraint>();
         Constraint determinedBy;
         int mark = 0;
-        Strength walkStrength = WEAKEST;
+        Strength walkStrength = Strength.WEAKEST;
         boolean stay = true;
         int value;
         final String name;
@@ -569,7 +568,7 @@ public class DeltaBlueExample {
             c.markUnsatisfied();
             c.removeFromGraph();
             List<Constraint> unsatisfied = removePropagateFrom(out);
-            Strength strength = REQUIRED;
+            Strength strength = Strength.REQUIRED;
             do {
                 for (int i = 0; i < unsatisfied.size(); i++) {
                     Constraint u = unsatisfied.get(i);
@@ -578,7 +577,7 @@ public class DeltaBlueExample {
                     }
                 }
                 strength = strength.nextWeaker();
-            } while (strength != WEAKEST);
+            } while (strength != Strength.WEAKEST);
         }
 
         /// Select a previously unused mark value.
@@ -668,7 +667,7 @@ public class DeltaBlueExample {
          */
         List<Constraint> removePropagateFrom(Variable out) {
             out.determinedBy = null;
-            out.walkStrength = WEAKEST;
+            out.walkStrength = Strength.WEAKEST;
             out.stay = true;
             List<Constraint> unsatisfied = new ArrayList<Constraint>();
             List<Variable> todo = new ArrayList<Variable>();
@@ -747,7 +746,7 @@ public class DeltaBlueExample {
         for (int i = 0; i <= n; i++) {
             Variable v = new Variable("v", 0);
             if (prev != null) {
-                new EqualityConstraint(prev, v, REQUIRED);
+                new EqualityConstraint(prev, v, Strength.REQUIRED);
             }
             if (i == 0) {
                 first = v;
@@ -757,8 +756,8 @@ public class DeltaBlueExample {
             }
             prev = v;
         }
-        new StayConstraint(last, STRONG_DEFAULT);
-        EditConstraint edit = new EditConstraint(first, PREFERRED);
+        new StayConstraint(last, Strength.STRONG_DEFAULT);
+        EditConstraint edit = new EditConstraint(first, Strength.PREFERRED);
         Plan plan = planner.extractPlanFromConstraints(Collections.<Constraint>singletonList(edit));
         for (int i = 0; i < 100; i++) {
             first.value = i;
@@ -786,8 +785,8 @@ public class DeltaBlueExample {
             src = new Variable("src", i);
             dst = new Variable("dst", i);
             dests.add(dst);
-            new StayConstraint(src, NORMAL);
-            new ScaleConstraint(src, scale, offset, dst, REQUIRED);
+            new StayConstraint(src, Strength.NORMAL);
+            new ScaleConstraint(src, scale, offset, dst, Strength.REQUIRED);
         }
         change(src, 17);
         if (dst.value != 1170) {
@@ -812,7 +811,7 @@ public class DeltaBlueExample {
     }
 
     static void change(Variable v, int newValue) {
-        EditConstraint edit = new EditConstraint(v, PREFERRED);
+        EditConstraint edit = new EditConstraint(v, Strength.PREFERRED);
         Plan plan = planner.extractPlanFromConstraints(Collections.<Constraint>singletonList(edit));
         for (int i = 0; i < 10; i++) {
             v.value = newValue;
