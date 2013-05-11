@@ -584,6 +584,8 @@ public class DeltaBlueExample {
         int newMark() {
             return ++currentMark;
         }
+        
+        List<Constraint> sources = new ArrayList<Constraint>(100);
 
         /**
          * Extract a plan for resatisfaction starting from the given source
@@ -602,7 +604,8 @@ public class DeltaBlueExample {
          * but which are also not computed by any constraint. Assume: [sources]
          * are all satisfied.
          */
-        Plan makePlan(List<Constraint> sources) {
+        Plan makePlan(Constraint source) {
+            sources.add(source);
             int mark = newMark();
             Plan plan = new Plan();
             List<Constraint> todo = sources;
@@ -614,23 +617,26 @@ public class DeltaBlueExample {
                     addConstraintsConsumingTo(c.output(), todo);
                 }
             }
+            sources.clear();
             return plan;
+        }
+        
+        Plan makePlan() {
+            int mark = newMark();
+            return new Plan();
         }
 
         /**
          * Extract a plan for resatisfying starting from the output of the given
          * [constraints], usually a set of input constraints.
          */
-        Plan extractPlanFromConstraints(List<Constraint> constraints) {
-            List<Constraint> sources = new ArrayList<Constraint>();
-            for (int i = 0; i < constraints.size(); i++) {
-                Constraint c = constraints.get(i);
-                // if not in plan already and eligible for inclusion.
-                if (c.isInput() && c.isSatisfied()) {
-                    sources.add(c);
-                }
+        Plan extractPlanFromConstraints(Constraint c) {
+            // if not in plan already and eligible for inclusion.
+            if (c.isInput() && c.isSatisfied()) {
+                return makePlan(c);
             }
-            return makePlan(sources);
+            
+            return makePlan();
         }
 
         /**
@@ -758,7 +764,7 @@ public class DeltaBlueExample {
         }
         new StayConstraint(last, Strength.STRONG_DEFAULT);
         EditConstraint edit = new EditConstraint(first, Strength.PREFERRED);
-        Plan plan = planner.extractPlanFromConstraints(Collections.<Constraint>singletonList(edit));
+        Plan plan = planner.extractPlanFromConstraints(edit);
         for (int i = 0; i < 100; i++) {
             first.value = i;
             plan.execute();
@@ -812,7 +818,7 @@ public class DeltaBlueExample {
 
     static void change(Variable v, int newValue) {
         EditConstraint edit = new EditConstraint(v, Strength.PREFERRED);
-        Plan plan = planner.extractPlanFromConstraints(Collections.<Constraint>singletonList(edit));
+        Plan plan = planner.extractPlanFromConstraints(edit);
         for (int i = 0; i < 10; i++) {
             v.value = newValue;
             plan.execute();
