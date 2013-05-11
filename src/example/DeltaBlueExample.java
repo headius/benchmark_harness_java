@@ -714,23 +714,20 @@ public class DeltaBlueExample {
      * resatisfy all currently satisfiable constraints in the face of one or
      * more changing inputs.
      */
-    static class Plan {
+    static class Plan extends ArrayList<Constraint> {
 
-        List<Constraint> list;
+        List<Constraint> list = this;
+        
+        Plan() {super(0);}
 
         void addConstraint(Constraint c) {
-            if (list == null) list = new ArrayList<Constraint>();
-            list.add(c);
-        }
-
-        int size() {
-            return list == null ? 0 : list.size();
+            add(c);
         }
 
         void execute() {
             int size = size();
             for (int i = 0; i < size; i++) {
-                list.get(i).execute();
+                get(i).execute();
             }
         }
     }
