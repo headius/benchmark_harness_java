@@ -42,7 +42,9 @@ import benchmark_harness.BenchmarkBase;
 public class DeltaBlueExample {
 
     public static void main(String[] args) {
-        new DeltaBlue().report();
+        for (int i = 0; i < 10; i++) {
+            new DeltaBlue().report();
+        }
     }
 
     /// Benchmark class required to report results.
