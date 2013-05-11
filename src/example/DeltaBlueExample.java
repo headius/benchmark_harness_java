@@ -605,10 +605,10 @@ public class DeltaBlueExample {
          * are all satisfied.
          */
         Plan makePlan(Constraint source) {
-            sources.add(source);
             int mark = newMark();
             Plan plan = new Plan();
             List<Constraint> todo = sources;
+            todo.add(source);
             while (todo.size() > 0) {
                 Constraint c = todo.remove(todo.size() - 1);//removeLast();
                 if (c.output().mark != mark && c.inputsKnown(mark)) {
@@ -622,7 +622,7 @@ public class DeltaBlueExample {
         }
         
         Plan makePlan() {
-            int mark = newMark();
+            newMark();
             return new Plan();
         }
 
@@ -638,6 +638,8 @@ public class DeltaBlueExample {
             
             return makePlan();
         }
+        
+        List<Constraint> constraintTodo = new ArrayList();
 
         /**
          * Recompute the walkabout strengths and stay flags of all variables
@@ -652,7 +654,7 @@ public class DeltaBlueExample {
          * inputs.
          */
         boolean addPropagate(Constraint c, int mark) {
-            List<Constraint> todo = new ArrayList<Constraint>();
+            List<Constraint> todo = constraintTodo;
             todo.add(c);
             while (todo.size() > 0) {
                 Constraint d = todo.remove(todo.size() - 1);//removeLast();
@@ -663,8 +665,11 @@ public class DeltaBlueExample {
                 d.recalculate();
                 addConstraintsConsumingTo(d.output(), todo);
             }
+            constraintTodo.clear();
             return true;
         }
+        
+        List<Variable> variableTodo = new ArrayList<Variable>();
 
         /**
          * Update the walkabout strengths and stay flags of all variables
@@ -676,7 +681,7 @@ public class DeltaBlueExample {
             out.walkStrength = Strength.WEAKEST;
             out.stay = true;
             List<Constraint> unsatisfied = new ArrayList<Constraint>();
-            List<Variable> todo = new ArrayList<Variable>();
+            List<Variable> todo = variableTodo;
             todo.add(out);
             while (todo.size() > 0) {
                 Variable v = todo.remove(todo.size() - 1);//removeLast();
@@ -695,6 +700,7 @@ public class DeltaBlueExample {
                     }
                 }
             }
+            variableTodo.clear();
             return unsatisfied;
         }
 
