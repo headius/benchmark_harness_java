@@ -515,13 +515,7 @@ public class DeltaBlueExample {
 
         /// Removes all traces of c from this variable.
         void removeConstraint(Constraint c) {
-            //constraints.removeWhere((e) => c == e);
-            for (final Iterator<Constraint> it = constraints.iterator(); it.hasNext();) {
-                final Constraint e = it.next();
-                if (c == e) {
-                    it.remove();
-                }
-            }
+            constraints.remove(c);
             if (determinedBy == c) {
                 determinedBy = null;
             }
