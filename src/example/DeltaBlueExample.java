@@ -716,18 +716,20 @@ public class DeltaBlueExample {
      */
     static class Plan {
 
-        List<Constraint> list = new ArrayList<Constraint>();
+        List<Constraint> list;
 
         void addConstraint(Constraint c) {
+            if (list == null) list = new ArrayList<Constraint>();
             list.add(c);
         }
 
         int size() {
-            return list.size();
+            return list == null ? 0 : list.size();
         }
 
         void execute() {
-            for (int i = 0; i < list.size(); i++) {
+            int size = size();
+            for (int i = 0; i < size; i++) {
                 list.get(i).execute();
             }
         }
