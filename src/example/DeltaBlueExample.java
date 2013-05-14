@@ -33,16 +33,15 @@ package example;
  * avoid deviating too much from the original implementation.
  */
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import benchmark_harness.BenchmarkBase;
+import java.util.Arrays;
 
 public class DeltaBlueExample {
 
     public static void main(String[] args) {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 100; i++) {
             new DeltaBlue().report();
         }
     }
@@ -54,9 +53,13 @@ public class DeltaBlueExample {
             super("DeltaBlue");
         }
 
-        protected void run() {
-            chainTest(100);
-            projectionTest(100);
+        public void run() {
+//            long start = System.nanoTime();
+//            for (int i = 0; i < 1000; i++) {
+                chainTest(100);
+                projectionTest(100);
+//            }
+//            System.out.println((System.nanoTime() - start) / 1000.0);
         }
     }
 
@@ -491,8 +494,8 @@ public class DeltaBlueExample {
      *
      */
     static class Variable {
-
-        List<Constraint> constraints = new ArrayList<Constraint>();
+        Constraint[] constraints = new Constraint[1];
+        int size = 0;
         Constraint determinedBy;
         int mark = 0;
         Strength walkStrength = Strength.WEAKEST;
@@ -510,12 +513,23 @@ public class DeltaBlueExample {
          * this variable.
          */
         void addConstraint(Constraint c) {
-            constraints.add(c);
+            Constraint[] myConstraints = constraints;
+            if (myConstraints.length == size) {
+                myConstraints = constraints = Arrays.copyOfRange(myConstraints, 0, Math.max(4, myConstraints.length * 2 + 1));
+            }
+            constraints[size++] = c;
         }
 
         /// Removes all traces of c from this variable.
         void removeConstraint(Constraint c) {
-            constraints.remove(c);
+            int out = 0;
+            for (int in = 0; in < size; in++) {
+                Constraint x = constraints[in];
+                if (x != c) {
+                    constraints[out++] = x;
+                }
+            }
+            size = out;
             if (determinedBy == c) {
                 determinedBy = null;
             }
@@ -679,15 +693,15 @@ public class DeltaBlueExample {
             todo.add(out);
             while (todo.size() > 0) {
                 Variable v = todo.remove(todo.size() - 1);//removeLast();
-                for (int i = 0; i < v.constraints.size(); i++) {
-                    Constraint c = v.constraints.get(i);
+                for (int i = 0; i < v.size; i++) {
+                    Constraint c = v.constraints[i];
                     if (!c.isSatisfied()) {
                         unsatisfied.add(c);
                     }
                 }
                 Constraint determining = v.determinedBy;
-                for (int i = 0; i < v.constraints.size(); i++) {
-                    Constraint next = v.constraints.get(i);
+                for (int i = 0; i < v.size; i++) {
+                    Constraint next = v.constraints[i];
                     if (next != determining && next.isSatisfied()) {
                         next.recalculate();
                         todo.add(next.output());
@@ -700,8 +714,8 @@ public class DeltaBlueExample {
 
         void addConstraintsConsumingTo(Variable v, List<Constraint> coll) {
             Constraint determining = v.determinedBy;
-            for (int i = 0; i < v.constraints.size(); i++) {
-                Constraint c = v.constraints.get(i);
+            for (int i = 0; i < v.size; i++) {
+                Constraint c = v.constraints[i];
                 if (c != determining && c.isSatisfied()) {
                     coll.add(c);
                 }
@@ -714,21 +728,30 @@ public class DeltaBlueExample {
      * resatisfy all currently satisfiable constraints in the face of one or
      * more changing inputs.
      */
-    static class Plan extends ArrayList<Constraint> {
+    static class Plan {
 
-        List<Constraint> list = this;
-        
-        Plan() {super(0);}
+        Constraint[] list = EMPTY_CONSTRAINTS;
+        int size;
+        static final Constraint[] EMPTY_CONSTRAINTS = new Constraint[0];
 
         void addConstraint(Constraint c) {
-            add(c);
+            Constraint[] myConstraints = list;
+            if (myConstraints.length == size) {
+                myConstraints = list = Arrays.copyOfRange(myConstraints, 0, Math.max(4, size * 2 + 1));
+            }
+            myConstraints[size++] = c;
         }
 
         void execute() {
             int size = size();
+            Constraint[] myList = list;
             for (int i = 0; i < size; i++) {
-                get(i).execute();
+                myList[i].execute();
             }
+        }
+        
+        int size() {
+            return size;
         }
     }
 
